@@ -67,7 +67,7 @@ while True:
             sell_signals.append(np.nan)
 
     # Calculate strategy returns
-    data['Position'] = np.where(data['BuySignals'].notnull(), 1, np.where(data['SellSignals'].notnull(), 0, np.nan))
+    data['Position'] = np.where(buy_signals[x].notnull(), 1, np.where(data['Sell Signals'].notnull(), 0, np.nan))
     data['Position'] = data['Position'].ffill().fillna(0)
     data['Market Return'] = data['Adj Close'].pct_change()
     data['Strategy Return'] = data['Market Return'] * data['Position']
@@ -96,7 +96,7 @@ while True:
     plt.plot(data['Adj Close'], label="Share Price", alpha=0.5)
     plt.plot(data[f'SMA_{ma_1}'], label=f"SMA_{ma_1}", color="aqua", linestyle="--")
     plt.plot(data[f'SMA_{ma_2}'], label=f"SMA_{ma_2}", color="lime", linestyle="--")
-    plt.scatter(data.index, data['BuySignals'], label="Buy Signal", marker="^", color="#00ff00", linewidths=3)
+    plt.scatter(data.index, buy_signals, label="Buy Signal", marker="^", color="#00ff00", linewidths=3)
     plt.scatter(data.index, data['SellSignals'], label="Sell Signal", marker="v", color="#ff0000", linewidths=3)
     plt.legend(loc="upper left")
     plt.show()
