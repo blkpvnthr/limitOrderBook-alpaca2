@@ -67,7 +67,7 @@ while True:
             sell_signals.append(np.nan)
 
     # Calculate strategy returns
-    data['Position'] = np.where(data['Buy Signals'].iloc[x].notnull(), 1, np.where(data['Sell Signals'].notnull(), 0, np.nan))
+    data['Position'] = np.where(~np.isnan(buy_signals[x]), 1, np.where(data['Sell Signals'].notnull(), 0, np.nan))
     data['Position'] = data['Position'].ffill().fillna(0)
     data['Market Return'] = data['Adj Close'].pct_change()
     data['Strategy Return'] = data['Market Return'] * data['Position']
