@@ -27,7 +27,7 @@ while True:
     end = now
 
     # Download historical data from Yahoo Finance
-    data = yf.download('JEPQ', start=start, end=end)
+    data = yf.download('SOXL', start=start, end=end)
 
     # Calculate moving averages
     data[f'SMA_{ma_1}'] = data['Adj Close'].rolling(window=ma_1).mean()
