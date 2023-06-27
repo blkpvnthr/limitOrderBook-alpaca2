@@ -9,7 +9,7 @@ plt.style.use("dark_background")
 # Alpaca API credentials
 API_KEY = 'PK8TEY3LLKTZ37B952IP'
 SECRET_KEY = 'vtT1nDJaAlKFGrsXozNAbmFFtur1vqOjQoxMn1VO'
-BASE_URL = 'https://paper-api.alpaca.markets'  # Use the paper trading API URL for testing
+BASE_URL = 'https://paper-api.alpaca.markets'
 
 # Initialize the Alpaca API
 api = tradeapi.REST(API_KEY, SECRET_KEY, base_url=BASE_URL, api_version='v2')
@@ -23,17 +23,15 @@ while True:
     now = dt.datetime.now()
 
     # Set the start and end dates for data retrieval
-    start = now - dt.timedelta(days=365 * 4)
+    start = now - dt.timedelta(days=365 * 4)    
     end = now
 
-    # Download historical data from Yahoo Finance
+    #  Download historical data from Yahoo Finance
     data = yf.download('SOXL', start=start, end=end)
 
     # Calculate moving averages
     data[f'SMA_{ma_1}'] = data['Adj Close'].rolling(window=ma_1).mean()
     data[f'SMA_{ma_2}'] = data['Adj Close'].rolling(window=ma_2).mean()
-
-    # Rest of the code...
 
     # Generate buy and sell signals
     data = data.iloc[ma_2:]
@@ -64,31 +62,12 @@ while True:
             order_ids.append(order.id)
             # Set position to 0 to prevent short positions
             position = 0
-        elif (
-            data[f'SMA_{ma_1}'].iloc[x] < data[f'SMA_{ma_2}'].iloc[x] and
-            data[f'SMA_{ma_1}'].iloc[x - 1] > data[f'SMA_{ma_2}'].iloc[x - 1] and
-            position == 1
-        ):
-            buy_signals.append(np.nan)
-            sell_signals.append(data['Adj Close'].iloc[x])
-            position = 0
-            # Place a sell order using Alpaca API
-            order = api.submit_order(
-                symbol='SOXL',
-                qty=1,  # Number of shares to sell
-                side='sell',
-                type='market',
-                time_in_force='gtc'
-            )
-            order_ids.append(order.id)
         else:
             buy_signals.append(np.nan)
             sell_signals.append(np.nan)
 
-    # Calculate strategy returns and other metrics
-    data['Buy Signals'] = buy_signals
-    data['Sell Signals'] = sell_signals
-    data['Position'] = np.where(data['Buy Signals'].notnull(), 1, np.where(data['Sell Signals'].notnull(), 0, np.nan))
+    # Calculate strategy returns
+    data['Position'] = np.where(data['BuySignals'].notnull(), 1, np.where(data['SellSignals'].notnull(), 0, np.nan))
     data['Position'] = data['Position'].ffill().fillna(0)
     data['Market Return'] = data['Adj Close'].pct_change()
     data['Strategy Return'] = data['Market Return'] * data['Position']
@@ -117,10 +96,12 @@ while True:
     plt.plot(data['Adj Close'], label="Share Price", alpha=0.5)
     plt.plot(data[f'SMA_{ma_1}'], label=f"SMA_{ma_1}", color="aqua", linestyle="--")
     plt.plot(data[f'SMA_{ma_2}'], label=f"SMA_{ma_2}", color="lime", linestyle="--")
-    plt.scatter(data.index, data['Buy Signals'], label="Buy Signal", marker="^", color="#00ff00", linewidths=3)
-    plt.scatter(data.index, data['Sell Signals'], label="Sell Signal", marker="v", color="#ff0000", linewidths=3)
+    plt.scatter(data.index, data['BuySignals'], label="Buy Signal", marker="^", color="#00ff00", linewidths=3)
+    plt.scatter(data.index, data['SellSignals'], label="Sell Signal", marker="v", color="#ff0000", linewidths=3)
     plt.legend(loc="upper left")
     plt.show()
+
+    current_price = data['Adj Close'].iloc[-1]  # Assuming current price is the last price in the data
 
     # Execute buy orders and print executed orders
     executed_buy_orders = []
@@ -129,19 +110,6 @@ while True:
         if order.side == 'buy' and order.status == 'filled':
             executed_buy_orders.append(order)
             print("Executed Buy Order:")
-            print("Symbol:", order.symbol)
-            print("Price:", order.filled_avg_price)
-            print("Quantity:", order.filled_qty)
-            print("Order ID:", order.id)
-            print()
-
-    # Execute sell orders and print executed orders
-    executed_sell_orders = []
-    for order_id in order_ids:
-        order = api.get_order_by_client_order_id(order_id)
-        if order.side == 'sell' and order.status == 'filled':
-            executed_sell_orders.append(order)
-            print("Executed Sell Order:")
             print("Symbol:", order.symbol)
             print("Price:", order.filled_avg_price)
             print("Quantity:", order.filled_qty)
